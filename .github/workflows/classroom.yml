@@ -56,6 +56,9 @@ jobs:
       # ── 5. Grade Summary → GitHub Step Summary ───────────────────
       - name: Generate grade summary
         if: always()
+        # exit code của grader.py = 1 khi chưa đạt 100/100 (bình thường)
+        # continue-on-error: true → step không làm fail workflow
+        continue-on-error: true
         run: python grader.py --markdown >> $GITHUB_STEP_SUMMARY
 
       # ── 6. Post / cập nhật comment trên Feedback PR ─────────────
