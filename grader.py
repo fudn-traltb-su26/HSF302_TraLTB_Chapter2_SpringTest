@@ -321,10 +321,14 @@ def main() -> int:
 
     if args.markdown:
         print_markdown(task_results, total_earned)
+        # CI mode: luôn exit 0 — chưa đạt 100/100 là bình thường,
+        # không phải lỗi workflow. Để workflow fail vì lý do này
+        # sẽ làm bước "Post grade comment" không chạy được.
+        return 0
     else:
         print_text(task_results, total_earned)
-
-    return 0 if total_earned >= TOTAL_MAX else 1
+        # Local mode: exit 1 khi chưa đủ điểm để báo cho developer biết
+        return 0 if total_earned >= TOTAL_MAX else 1
 
 
 if __name__ == "__main__":
