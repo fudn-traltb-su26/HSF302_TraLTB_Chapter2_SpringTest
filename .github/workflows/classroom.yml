@@ -1,0 +1,122 @@
+name: GitHub Classroom Autograding
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  checks: write
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  autograding:
+    name: "Autograding"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ─── 1. Checkout ───────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ─── 2. Java 17 + Maven cache ──────────────────────────────
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
+
+      # ─── 3. Compile (src + test) ───────────────────────────────
+      - name: Compile project
+        id: compile
+        run: mvn test-compile -q
+        continue-on-error: true
+
+      - name: Compilation failed warning
+        if: steps.compile.outcome == 'failure'
+        run: |
+          echo "::warning::Compilation failed — kiểm tra lại code trước khi push!"
+          echo "## ❌ Compilation Failed" >> $GITHUB_STEP_SUMMARY
+          echo "Project không compile được. Hãy kiểm tra lại code của bạn." >> $GITHUB_STEP_SUMMARY
+          mvn test-compile 2>&1 | tail -30 >> $GITHUB_STEP_SUMMARY || true
+
+      # ─── 4. Run all tests (generate surefire XML reports) ──────
+      - name: Run all tests
+        run: mvn test --fail-at-end -q
+        continue-on-error: true
+
+      # ─── 5. Grade summary → GitHub Step Summary ────────────────
+      - name: Generate grade summary
+        if: always()
+        run: python grader.py --markdown >> $GITHUB_STEP_SUMMARY
+
+      # ─── 6. Official autograding (reads autograding.json) ──────
+      - name: Autograding
+        uses: education/autograding@v1
+        continue-on-error: true
+
+      # ─── 7. Post score comment on Feedback PR ──────────────────
+      - name: Post score comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+
+            let gradeOutput = '';
+            try {
+              gradeOutput = execSync('python grader.py --markdown', { encoding: 'utf8' });
+            } catch (e) {
+              gradeOutput = '> Không thể tạo grade report — hãy chắc chắn đã chạy `mvn test` thành công.\n';
+            }
+
+            const sha = context.sha.substring(0, 7);
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              `## 📊 Grade Report — commit \`${sha}\``,
+              '',
+              gradeOutput,
+              '',
+              `> 🔗 [Xem chi tiết Actions run](${runUrl})`,
+            ].join('\n');
+
+            // Tìm "Feedback" PR (GitHub Classroom tự tạo)
+            const { data: pulls } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+            });
+
+            const feedbackPR = pulls.find(pr => pr.title === 'Feedback');
+            if (feedbackPR) {
+              // Xóa comment cũ nếu có
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: feedbackPR.number,
+              });
+              for (const c of comments) {
+                if (c.body && c.body.startsWith('## 📊 Grade Report')) {
+                  await github.rest.issues.deleteComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: c.id,
+                  });
+                }
+              }
+              // Đăng comment mới
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: feedbackPR.number,
+                body,
+              });
+              console.log(`Posted grade comment on Feedback PR #${feedbackPR.number}`);
+            } else {
+              console.log('No "Feedback" PR found — skipping comment');
+            }

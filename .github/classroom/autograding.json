@@ -1,0 +1,234 @@
+{
+  "tests": [
+    {
+      "name": "Task1.1 — @Configuration [3pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task01_AppConfigTest#t1_hasConfigurationAnnotation\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 3
+    },
+    {
+      "name": "Task1.2 — @ComponentScan [4pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task01_AppConfigTest#t2_hasComponentScanAnnotation\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 4
+    },
+    {
+      "name": "Task1.3 — @EnableAspectJAutoProxy [3pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task01_AppConfigTest#t3_hasEnableAspectJAutoProxy\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 3
+    },
+    {
+      "name": "Task2.1 — field name [2pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task02_StudentPojoTest#t1_hasNameField\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 2
+    },
+    {
+      "name": "Task2.2 — field age [2pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task02_StudentPojoTest#t2_hasAgeField\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 2
+    },
+    {
+      "name": "Task2.3 — constructor [4pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task02_StudentPojoTest#t3_hasConstructor\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 4
+    },
+    {
+      "name": "Task2.4 — getName() [3pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task02_StudentPojoTest#t4_getName\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 3
+    },
+    {
+      "name": "Task2.5 — getAge() [3pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task02_StudentPojoTest#t5_getAge\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 3
+    },
+    {
+      "name": "Task2.6 — setName() [3pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task02_StudentPojoTest#t6_setName\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 3
+    },
+    {
+      "name": "Task2.7 — setAge() [3pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task02_StudentPojoTest#t7_setAge\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 3
+    },
+    {
+      "name": "Task3.1 — @Service [5pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task03_StudentServiceTest#t1_hasServiceAnnotation\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 5
+    },
+    {
+      "name": "Task3.2 — bean in context [5pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task03_StudentServiceTest#t2_beanExistsInContext\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 5
+    },
+    {
+      "name": "Task3.3 — addStudent() output [5pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task03_StudentServiceTest#t3_addStudentPrintsCorrectly\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 5
+    },
+    {
+      "name": "Task3.4 — getStudentInfo() non-null [5pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task03_StudentServiceTest#t4_getStudentInfoReturnsNonNull\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 5
+    },
+    {
+      "name": "Task4.1 — field initialized [3pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task04_LifecycleBeanTest#t1_hasInitializedField\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 3
+    },
+    {
+      "name": "Task4.2 — @PostConstruct method [10pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task04_LifecycleBeanTest#t2_hasPostConstructMethod\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 10
+    },
+    {
+      "name": "Task4.3 — @PreDestroy method [10pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task04_LifecycleBeanTest#t3_hasPreDestroyMethod\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 10
+    },
+    {
+      "name": "Task4.4 — @PreDestroy in ra message [2pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task04_LifecycleBeanTest#t6_preDestroyPrintsMessage\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 2
+    },
+    {
+      "name": "Task5.1 — @Aspect [2pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task05_AOPTest#t1_hasAspectAnnotation\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 2
+    },
+    {
+      "name": "Task5.2 — @Component trên Aspect [3pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task05_AOPTest#t2_hasComponentAnnotation\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 3
+    },
+    {
+      "name": "Task5.3 — @Before advice [7pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task05_AOPTest#t3_hasBeforeAdvice\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 7
+    },
+    {
+      "name": "Task5.4 — @AfterReturning advice [7pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task05_AOPTest#t4_hasAfterReturningAdvice\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 7
+    },
+    {
+      "name": "Task5.5 — @Around advice [6pts]",
+      "setup": "",
+      "run": "mvn test -Dtest=\"Task05_AOPTest#t5_hasAroundAdvice\" -q 2>&1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 120,
+      "points": 6
+    }
+  ]
+}
