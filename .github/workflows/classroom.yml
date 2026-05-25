@@ -53,13 +53,17 @@ jobs:
         run: mvn test --fail-at-end --no-transfer-progress -q
         continue-on-error: true
 
-      # ── 5. Grade Summary → GitHub Step Summary ───────────────────
+      # ── 5. Grade Summary → GitHub Step Summary + Annotation ────────
       - name: Generate grade summary
         if: always()
-        # exit code của grader.py = 1 khi chưa đạt 100/100 (bình thường)
-        # continue-on-error: true → step không làm fail workflow
         continue-on-error: true
-        run: python grader.py --markdown >> $GITHUB_STEP_SUMMARY
+        run: |
+          # Bảng điểm chi tiết → Step Summary (click vào job để xem)
+          python grader.py --markdown >> $GITHUB_STEP_SUMMARY
+
+          # Điểm tổng → Annotation hiện thẳng trên trang workflow summary
+          SCORE=$(python grader.py --score 2>/dev/null || echo "?/100")
+          echo "::notice title=📊 Score::$SCORE"
 
       # ── 6. Post / cập nhật comment trên Feedback PR ─────────────
       - name: Post grade comment on Feedback PR

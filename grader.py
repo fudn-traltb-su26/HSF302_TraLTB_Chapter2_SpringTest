@@ -292,18 +292,21 @@ def main() -> int:
         "--markdown", action="store_true",
         help="Output Markdown (for GitHub Step Summary / PR comment)"
     )
+    parser.add_argument(
+        "--score", action="store_true",
+        help="Output only the score line (for GitHub annotation)"
+    )
     args = parser.parse_args()
 
     reports_dir = os.path.join("target", "surefire-reports")
     if not os.path.isdir(reports_dir):
-        msg = (
-            "\n[ERROR] Không tìm thấy target/surefire-reports/\n"
-            "        Hãy chạy trước:  mvn test -fae\n"
-        )
         if args.markdown:
             print("## ❌ Grade Report\n\nChưa có surefire report. Chạy `mvn test -fae` trước.")
+        elif args.score:
+            print("0/100")
         else:
-            print(msg)
+            print("\n[ERROR] Không tìm thấy target/surefire-reports/\n"
+                  "        Hãy chạy trước:  mvn test -fae\n")
         return 1
 
     task_results: List[TaskResult] = []
@@ -318,17 +321,23 @@ def main() -> int:
         task_results.append(tr)
 
     total_earned = sum(tr.earned_pts for tr in task_results if not tr.missing_report)
+    letter        = grade_letter(total_earned, TOTAL_MAX)
+
+    if args.score:
+        # Một dòng duy nhất — dùng cho GitHub annotation
+        task_summary = " | ".join(
+            f"{tr.label.split('—')[1].strip()}: {tr.earned_pts}/{tr.max_pts}"
+            for tr in task_results
+        )
+        print(f"{total_earned}/{TOTAL_MAX} ({letter}) — {task_summary}")
+        return 0
 
     if args.markdown:
         print_markdown(task_results, total_earned)
-        # CI mode: luôn exit 0 — chưa đạt 100/100 là bình thường,
-        # không phải lỗi workflow. Để workflow fail vì lý do này
-        # sẽ làm bước "Post grade comment" không chạy được.
-        return 0
-    else:
-        print_text(task_results, total_earned)
-        # Local mode: exit 1 khi chưa đủ điểm để báo cho developer biết
-        return 0 if total_earned >= TOTAL_MAX else 1
+        return 0   # CI mode: luôn exit 0
+
+    print_text(task_results, total_earned)
+    return 0 if total_earned >= TOTAL_MAX else 1
 
 
 if __name__ == "__main__":
