@@ -5,118 +5,119 @@ on:
     branches: ["**"]
   workflow_dispatch:
 
+# Chỉ cần quyền đọc repo + ghi PR comment
 permissions:
-  checks: write
-  actions: read
   contents: read
   pull-requests: write
+  checks: write
 
 jobs:
   autograding:
     name: "Autograding"
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10   # tối đa 10 phút — đủ dùng, không lãng phí quota
 
     steps:
-      # ─── 1. Checkout ───────────────────────────────────────────
-      - name: Checkout repository
+      # ── 1. Checkout ─────────────────────────────────────────────
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # ─── 2. Java 17 + Maven cache ──────────────────────────────
+      # ── 2. Java 17 + cache Maven dependencies ───────────────────
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "temurin"
-          cache: "maven"
+          cache: "maven"   # cache ~/.m2 → lần push sau chỉ tải dependency mới
 
-      # ─── 3. Compile (src + test) ───────────────────────────────
-      - name: Compile project
+      # ── 3. Compile (src + test) ──────────────────────────────────
+      - name: Compile
         id: compile
-        run: mvn test-compile -q
-        continue-on-error: true
+        run: mvn test-compile --no-transfer-progress -q
+        continue-on-error: true   # nếu compile lỗi, vẫn chạy tiếp để báo lỗi rõ
 
-      - name: Compilation failed warning
+      - name: Report compile error
         if: steps.compile.outcome == 'failure'
         run: |
-          echo "::warning::Compilation failed — kiểm tra lại code trước khi push!"
           echo "## ❌ Compilation Failed" >> $GITHUB_STEP_SUMMARY
-          echo "Project không compile được. Hãy kiểm tra lại code của bạn." >> $GITHUB_STEP_SUMMARY
-          mvn test-compile 2>&1 | tail -30 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          mvn test-compile --no-transfer-progress 2>&1 | grep -E "ERROR|error:" | head -30 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Fix lỗi compile trước, sau đó push lại." >> $GITHUB_STEP_SUMMARY
 
-      # ─── 4. Run all tests (generate surefire XML reports) ──────
+      # ── 4. Chạy TẤT CẢ test trong 1 lần duy nhất ───────────────
+      #    -fae = fail-at-end: không dừng khi gặp test fail,
+      #           chạy hết rồi mới exit → surefire XML đủ cho grader.py
       - name: Run all tests
-        run: mvn test --fail-at-end -q
+        run: mvn test --fail-at-end --no-transfer-progress -q
         continue-on-error: true
 
-      # ─── 5. Grade summary → GitHub Step Summary ────────────────
+      # ── 5. Grade Summary → GitHub Step Summary ───────────────────
       - name: Generate grade summary
         if: always()
         run: python grader.py --markdown >> $GITHUB_STEP_SUMMARY
 
-      # ─── 6. Official autograding (reads autograding.json) ──────
-      - name: Autograding
-        uses: education/autograding@v1
-        continue-on-error: true
-
-      # ─── 7. Post score comment on Feedback PR ──────────────────
-      - name: Post score comment
+      # ── 6. Post / cập nhật comment trên Feedback PR ─────────────
+      - name: Post grade comment on Feedback PR
         if: always()
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
             const { execSync } = require('child_process');
 
-            let gradeOutput = '';
+            // Lấy grade report dạng Markdown
+            let gradeOutput;
             try {
               gradeOutput = execSync('python grader.py --markdown', { encoding: 'utf8' });
             } catch (e) {
-              gradeOutput = '> Không thể tạo grade report — hãy chắc chắn đã chạy `mvn test` thành công.\n';
+              gradeOutput = e.stdout || '> Không thể tạo grade report.';
             }
 
-            const sha = context.sha.substring(0, 7);
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const body = [
+            const sha     = context.sha.substring(0, 7);
+            const runUrl  = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body    = [
               `## 📊 Grade Report — commit \`${sha}\``,
               '',
-              gradeOutput,
+              gradeOutput.trim(),
               '',
-              `> 🔗 [Xem chi tiết Actions run](${runUrl})`,
+              `> 🔗 [Xem log chi tiết](${runUrl})`,
             ].join('\n');
 
-            // Tìm "Feedback" PR (GitHub Classroom tự tạo)
+            // Tìm Feedback PR do GitHub Classroom tạo sẵn
             const { data: pulls } = await github.rest.pulls.list({
               owner: context.repo.owner,
-              repo: context.repo.repo,
+              repo:  context.repo.repo,
               state: 'open',
             });
-
             const feedbackPR = pulls.find(pr => pr.title === 'Feedback');
-            if (feedbackPR) {
-              // Xóa comment cũ nếu có
-              const { data: comments } = await github.rest.issues.listComments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: feedbackPR.number,
-              });
-              for (const c of comments) {
-                if (c.body && c.body.startsWith('## 📊 Grade Report')) {
-                  await github.rest.issues.deleteComment({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    comment_id: c.id,
-                  });
-                }
-              }
-              // Đăng comment mới
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: feedbackPR.number,
-                body,
-              });
-              console.log(`Posted grade comment on Feedback PR #${feedbackPR.number}`);
-            } else {
-              console.log('No "Feedback" PR found — skipping comment');
+
+            if (!feedbackPR) {
+              console.log('Không tìm thấy Feedback PR — bỏ qua bước post comment.');
+              return;
             }
+
+            // Xóa comment grade cũ (nếu có) để tránh spam
+            const { data: comments } = await github.rest.issues.listComments({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: feedbackPR.number,
+            });
+            for (const c of comments) {
+              if (c.user?.type === 'Bot' && c.body?.startsWith('## 📊 Grade Report')) {
+                await github.rest.issues.deleteComment({
+                  owner:      context.repo.owner,
+                  repo:       context.repo.repo,
+                  comment_id: c.id,
+                });
+              }
+            }
+
+            // Đăng comment mới
+            await github.rest.issues.createComment({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: feedbackPR.number,
+              body,
+            });
+            console.log(`✅ Đã post grade comment lên PR #${feedbackPR.number}`);
